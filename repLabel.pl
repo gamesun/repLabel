@@ -5,33 +5,52 @@ use File::Find;
 use Win32::Console::ANSI;
 use Term::ANSIColor;
 use File::Copy;
+use IO::Handle;
+use Text::Tabs;
+$tabstop = 4;
 
-my $total = $#ARGV + 1;
-
-if ( $total != 1 ){
-    print "  usage: repLabel path\n\n  eg: repLabel c:\\project\\source\n";
+if ( ($#ARGV + 1) != 2 ){
+    print "\n";
+    print "USAGE\n";
+    print "       perl repLabel.pl <dir> <list>\n";
+    print "OPTIONS\n";
+    print "       <dir>\n";
+    print "           Directory of source code to replace.\n";
+    print "       <list>\n";
+    print "           A file listing strings looks like this:\n";
+    print "             oldstring1,newstring1\n";
+    print "             oldstring2,newstring2\n";
+    print "             ...\n";
+    print "             oldstringN,newstringN\n";
+    print "EXAMPLES\n";
+    print "       repLabel c:\\project\\source\ c:\\list.txt\n";
+    print "\n";
+    print "repLabel v1.0\n";
     exit;
 }
 
 my @list;
-my $len = 0;
+my $list_len = 0;
 my $root = $ARGV[0];
+my $listfile = $ARGV[1];
+
 my $fileNum = 0;
-my $fileCompleted = 0;
+my $fileCompleted = 1;
 
-init($root);
-print "There is(are) $fileNum file(s) under $root.\n";
-
+init($root,$listfile);
+print "There is(are) $fileNum file(s) under $root.\n\n";
+STDOUT->autoflush;
 replace($root);
 
 exit 0;
 
 sub init {
     my $path = $_[0];
+    my $listfile = $_[1];
     my $i = 0;
     my $j = 0;
     
-    open (MYFILE, 'list.txt');
+    open (MYFILE, $listfile);
     while (<MYFILE>) {
         chomp;
         /([^,]*),(.*)/;
@@ -41,7 +60,7 @@ sub init {
     }
     close (MYFILE);
     
-    $len = $i;
+    $list_len = $i;
     
     $fileNum = FileNum($path);
 }
@@ -68,22 +87,58 @@ sub FileNum {
 sub replace {
     my $path = $_[0];
     my $line;
+    my $lineNum;
     my $j;
+    my $old;
+    my $rep_cnt_file;
+    my $rep_cnt_line;
+    my $align_succeed_cnt;
+    my $align_failed_cnt;
+    my $align_neednot_cnt;
+    
     
     opendir my $DIR, $path or die "$!";
     while (my $file = readdir($DIR)) {
         if (-f "$path\\$file") {
-            print "$path\\$file";
+            print " [$fileCompleted/$fileNum] $path\\$file";
             
-            #open (IN, "$path\\$file") or die "$!, opening $path\\$file\n";
             open (IN, "$path\\$file") or next;
             open (OUT, ">TEMP") or die "$!, opening TEMP\n";
             
+            $lineNum = 1;
+            $rep_cnt_file = 0;
+            $align_succeed_cnt = 0;
+            $align_failed_cnt = 0;
+            $align_neednot_cnt = 0;
             while ($line = <IN>) {
-                for ($j = 0; $j < $len; $j += 1){
-                    $line =~ s/\b$list[0][$j]\b/$list[1][$j]/g;
+                for ($j = 0; $j < $list_len; $j += 1){
+                    $old = $line;
+                    $rep_cnt_line = $line =~ s/\b$list[0][$j]\b/$list[1][$j]/g;
+                    if ($rep_cnt_line) {
+                        $rep_cnt_file += $rep_cnt_line;
+                        if (length(expand($line)) == length(expand($old))) {
+                            $align_neednot_cnt += 1;
+                        } else {
+                            if ($line =~ m/\t\/\//) {
+                                if (length(expand($line)) - length(expand($old)) == 4) {
+                                    $line =~ s/\t\/\//\/\//g;
+                                }
+                                
+                                if (length(expand($line)) != length(expand($old))) {
+                                    $align_failed_cnt += 1;
+                                    print "\n   Align comments failed:$path\\$file($lineNum)";
+                                } else {
+                                    $align_succeed_cnt += 1;
+                                }
+                            } else {
+                                $align_failed_cnt += 1;
+                                print "\n   Align comments failed:$path\\$file($lineNum)";
+                            }
+                        }
+                    }
                 }
                 print OUT $line;
+                $lineNum += 1;
             }
             
             close OUT;
@@ -94,7 +149,10 @@ sub replace {
             
             $fileCompleted += 1;
             
-            print " ", color("green"), "completed\.", color("reset"), " [$fileCompleted/$fileNum]\n";
+            print "\n   ", color("cyan"), "Replace:$rep_cnt_file", color("reset"), "\.";
+            print color("green"), "  Align succeed: $align_succeed_cnt, ", color("reset");
+            print color("yellow"), " align not need: $align_neednot_cnt, ", color("reset");
+            print color("red"), "align failed: $align_failed_cnt\n", color("reset");
         } elsif ( $file ne "." and $file ne ".." ) {
             replace("$path\\$file");
         }
