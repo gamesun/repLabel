@@ -12,9 +12,8 @@ if not  exist D:\sunyt\01_tool\strawberry\perl\bin\perl.exe (
 )
 
 echo Welcome to repLabel v1.0
-echo.
 
-    cmd /k
+    cmd /k repLabel.pl
     
 goto END
 
