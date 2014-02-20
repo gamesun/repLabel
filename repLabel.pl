@@ -38,7 +38,7 @@ my $fileNum = 0;
 my $fileCompleted = 1;
 
 init($root,$listfile);
-print "There is(are) $fileNum file(s) under $root.\n\n";
+HeadInfo();
 STDOUT->autoflush;
 replace($root);
 EndInfo();
@@ -83,6 +83,15 @@ sub FileNum {
     return $i;
 }
 
+sub HeadInfo {
+    print "There is(are) $fileNum file(s) under $root.\n\n";
+    print "No\.,File,";
+    print color("cyan"), "Repalce Count,", color("reset");
+    print color("green"), "Align Succeed Count,", color("reset");
+    print color("yellow"), "Align Not Need Count,", color("reset");
+    print color("red"), "Align Failed Count\n", color("reset");
+}
+
 
 sub replace {
     my $path = $_[0];
@@ -100,7 +109,7 @@ sub replace {
     opendir my $DIR, $path or die "$!";
     while (my $file = readdir($DIR)) {
         if (-f "$path\\$file") {
-            print " [$fileCompleted/$fileNum] $path\\$file";
+            print "$fileCompleted,$path\\$file,";
             
             open (IN, "$path\\$file") or next;
             open (OUT, ">TEMP") or die "$!, opening TEMP\n";
@@ -149,10 +158,10 @@ sub replace {
             
             $fileCompleted += 1;
             
-            print "\n   ", color("cyan"), "Replace:$rep_cnt_file  ", color("reset");
-            print color("green"), "Align succeed: $align_succeed_cnt  ", color("reset");
-            print color("yellow"), "Align not need: $align_neednot_cnt  ", color("reset");
-            print color("red"), "Align failed: $align_failed_cnt\n", color("reset");
+            print color("cyan"), "$rep_cnt_file,", color("reset");
+            print color("green"), "$align_succeed_cnt,", color("reset");
+            print color("yellow"), "$align_neednot_cnt,", color("reset");
+            print color("red"), "$align_failed_cnt\n", color("reset");
         } elsif ( $file ne "." and $file ne ".." ) {
             replace("$path\\$file");
         }
@@ -164,9 +173,10 @@ sub EndInfo {
     my $j;
     
     print "\nReplace count of every keyword:\n\n";
+    print "No\.,old string,new string,replace count\n";
     
     for ($j = 0; $j < $list_len; $j += 1){
-        print "$list[0][$j],$list[1][$j],$list[2][$j]\n";
+        print (($j+1) . ",$list[0][$j],$list[1][$j],$list[2][$j]\n");
     }
 }
 
