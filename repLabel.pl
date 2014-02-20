@@ -41,21 +41,21 @@ init($root,$listfile);
 print "There is(are) $fileNum file(s) under $root.\n\n";
 STDOUT->autoflush;
 replace($root);
-
+EndInfo();
 exit 0;
 
 sub init {
     my $path = $_[0];
     my $listfile = $_[1];
     my $i = 0;
-    my $j = 0;
     
     open (MYFILE, $listfile);
     while (<MYFILE>) {
         chomp;
         /([^,]*),(.*)/;
-        $list[0][$i] = $1;
-        $list[1][$i] = $2;
+        $list[0][$i] = $1;  # old string
+        $list[1][$i] = $2;  # new string
+        $list[2][$i] = 0;   # replace counter
         $i += 1;
     }
     close (MYFILE);
@@ -115,11 +115,12 @@ sub replace {
                     $old = $line;
                     $rep_cnt_line = $line =~ s/\b$list[0][$j]\b/$list[1][$j]/g;
                     if ($rep_cnt_line) {
+                        $list[2][$j] += 1;
                         $rep_cnt_file += $rep_cnt_line;
                         if (length(expand($line)) == length(expand($old))) {
                             $align_neednot_cnt += 1;
                         } else {
-                            if ($line =~ m/\t\/\//) {
+                            if ($line =~ m/\/\//) {
                                 if (length(expand($line)) - length(expand($old)) == 4) {
                                     $line =~ s/\t\/\//\/\//g;
                                 }
@@ -131,8 +132,7 @@ sub replace {
                                     $align_succeed_cnt += 1;
                                 }
                             } else {
-                                $align_failed_cnt += 1;
-                                print "\n   Align comments failed:$path\\$file($lineNum)";
+                                $align_neednot_cnt += 1;
                             }
                         }
                     }
@@ -149,14 +149,24 @@ sub replace {
             
             $fileCompleted += 1;
             
-            print "\n   ", color("cyan"), "Replace:$rep_cnt_file", color("reset"), "\.";
-            print color("green"), "  Align succeed: $align_succeed_cnt, ", color("reset");
-            print color("yellow"), " align not need: $align_neednot_cnt, ", color("reset");
-            print color("red"), "align failed: $align_failed_cnt\n", color("reset");
+            print "\n   ", color("cyan"), "Replace:$rep_cnt_file  ", color("reset");
+            print color("green"), "Align succeed: $align_succeed_cnt  ", color("reset");
+            print color("yellow"), "Align not need: $align_neednot_cnt  ", color("reset");
+            print color("red"), "Align failed: $align_failed_cnt\n", color("reset");
         } elsif ( $file ne "." and $file ne ".." ) {
             replace("$path\\$file");
         }
     }
     closedir($DIR);
+}
+
+sub EndInfo {
+    my $j;
+    
+    print "\nReplace count of every keyword:\n\n";
+    
+    for ($j = 0; $j < $list_len; $j += 1){
+        print "$list[0][$j],$list[1][$j],$list[2][$j]\n";
+    }
 }
 
