@@ -104,6 +104,7 @@ sub replace {
     my $align_succeed_cnt;
     my $align_failed_cnt;
     my $align_neednot_cnt;
+    my $buffer;
     
     
     opendir my $DIR, $path or die "$!";
@@ -119,6 +120,8 @@ sub replace {
             $align_succeed_cnt = 0;
             $align_failed_cnt = 0;
             $align_neednot_cnt = 0;
+            $buffer = "";
+            open my $fh_buff, ">", \$buffer or die "$!";
             while ($line = <IN>) {
                 for ($j = 0; $j < $list_len; $j += 1){
                     $old = $line;
@@ -136,7 +139,7 @@ sub replace {
                                 
                                 if (length(expand($line)) != length(expand($old))) {
                                     $align_failed_cnt += 1;
-                                    print "\n   Align comments failed:$path\\$file($lineNum)";
+                                    print $fh_buff ",   Align comments failed:$path\\$file($lineNum)\n";
                                 } else {
                                     $align_succeed_cnt += 1;
                                 }
@@ -162,6 +165,7 @@ sub replace {
             print color("green"), "$align_succeed_cnt,", color("reset");
             print color("yellow"), "$align_neednot_cnt,", color("reset");
             print color("red"), "$align_failed_cnt\n", color("reset");
+            print $buffer;
         } elsif ( $file ne "." and $file ne ".." ) {
             replace("$path\\$file");
         }
