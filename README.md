@@ -6,13 +6,13 @@ It can work with multiple files, and multiple keyword couples is acceptable.
 
 * Make sure that you have [Perl](http://www.perl.org/) installed.
 
-Usage
------
-<pre><code>    perl repLabel.pl <dir> <list>
+
+<pre><code>USAGE
+       perl repLabel.pl \<dir\> \<list\>
 OPTIONS
-       <dir>
+       \<dir\>
            Directory of source code to replace.
-       <list>
+       \<list\>
            A file listing strings looks like this:
              oldstring1,newstring1
              oldstring2,newstring2
