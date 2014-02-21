@@ -56,7 +56,7 @@ if ( ($#ARGV + 1) != 2 ){
     print "EXAMPLES\n";
     print "       repLabel c:\\project\\source\ c:\\list.txt\n";
     print "\n";
-    print "repLabel v1.0\n";
+    print "repLabel v1.1\n";
     exit;
 }
 
